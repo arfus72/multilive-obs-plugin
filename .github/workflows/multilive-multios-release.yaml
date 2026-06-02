@@ -1,6 +1,11 @@
 name: Multi Live Multi-OS Release
 
 on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       create_release:
@@ -117,7 +122,7 @@ jobs:
 
   release:
     name: Draft release
-    if: inputs.create_release && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' && inputs.create_release && startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-24.04
     steps:
