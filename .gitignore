@@ -6,6 +6,9 @@
 !/build-aux
 !/cmake
 !/data
+!/installer
+!/installer-linux
+!/installer-macos
 !/src
 !.clang-format
 !.gersemirc
@@ -14,6 +17,7 @@
 !CMakeLists.txt
 !CMakePresets.json
 !LICENSE
+!MULTI_OS_RELEASE.md
 !README.md
 
 # Exclude lock files
@@ -24,3 +28,11 @@
 
 # Exclude CMake build number cache
 /cmake/.CMakeBuildNumber
+
+# Exclude generated installer payloads
+/installer/payload/
+/installer/SHA256SUMS.txt
+/installer-linux/payload/
+/installer-linux/install-report-linux.txt
+/installer-macos/payload/
+/installer-macos/install-report-macos.txt

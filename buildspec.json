@@ -33,13 +33,13 @@
     },
     "platformConfig": {
         "macos": {
-            "bundleId": "com.example.plugintemplate-for-obs"
+            "bundleId": "org.afsmultichat.multilive-signature-guard"
         }
     },
-    "name": "plugintemplate-for-obs",
-    "displayName": "Plugin Template for OBS",
+    "name": "multilive-signature-guard",
+    "displayName": "Multi Live Signature Guard",
     "version": "1.0.0",
-    "author": "Your Name Here",
-    "website": "https://example.com",
-    "email": "me@example.com"
+    "author": "Multi Live Pro",
+    "website": "https://afs-multichat.duckdns.org",
+    "email": "support@afs-multichat.duckdns.org"
 }
