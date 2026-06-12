@@ -1,4 +1,4 @@
-Multi Live OBS Plugin - Installation streamer
+Multi Live OBS Plugin 1.2.0 - Installation streamer
 
 Ce paquet installe le plugin OBS natif Multi Live.
 
@@ -10,6 +10,7 @@ Installation:
 5. Redemarre OBS Studio.
 
 Ce que le plugin fait:
+- repare les docks OBS "Multi Live Dock Live" et "Multi Live Chat" vers multi-live-pro.com;
 - garde la source "Multi Live Signature" visible et verrouillee;
 - remet la bonne URL, taille et position;
 - supprime les doublons Alert Box qui peuvent relire les follows;

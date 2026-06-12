@@ -1,7 +1,9 @@
 $ErrorActionPreference = "Stop"
 
 $pluginName = "multilive-signature-guard"
+$pluginVersion = "1.2.0"
 $displayName = "Multi Live OBS Plugin"
+$panelBaseUrl = "https://multi-live-pro.com/multilive"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $packageRoot = Join-Path $scriptRoot "payload"
 $reportPath = Join-Path $scriptRoot "install-report.txt"
@@ -78,10 +80,80 @@ function Copy-Plugin($obsRoot) {
     return $targetDll
 }
 
+function Get-ObsUserIniPath {
+    if (-not $env:APPDATA) { return $null }
+    $path = Join-Path $env:APPDATA "obs-studio\user.ini"
+    if (Test-Path -LiteralPath $path) { return $path }
+    return $null
+}
+
+function Get-QueryValue($text, $key) {
+    $escapedKey = [Regex]::Escape($key)
+    $match = [Regex]::Match($text, "(?i)$escapedKey=([^&`"'\],}]+)")
+    if ($match.Success) { return $match.Groups[1].Value }
+    return ""
+}
+
+function Get-StreamerSlugFromText($text) {
+    $match = [Regex]::Match($text, "/multilive/([^/`"'\],}]+)")
+    if ($match.Success) { return $match.Groups[1].Value }
+    return "arfustv"
+}
+
+function Repair-MultiLiveDocks {
+    $iniPath = Get-ObsUserIniPath
+    if (-not $iniPath) {
+        Write-Step "Fichier OBS user.ini introuvable, les docks seront repares au prochain demarrage OBS."
+        return
+    }
+
+    $raw = Get-Content -LiteralPath $iniPath -Raw -ErrorAction SilentlyContinue
+    if (-not $raw) { $raw = "" }
+
+    $token = Get-QueryValue $raw "widgetToken"
+    if (-not $token) { $token = Get-QueryValue $raw "widgettoken" }
+    if (-not $token) { $token = Get-QueryValue $raw "token" }
+
+    if (-not $token) {
+        Write-Step "Aucun token dock trouve. Ouvre une fois le panel dans OBS, puis relance l'installateur si besoin."
+        return
+    }
+
+    $slug = Get-StreamerSlugFromText $raw
+$versionParam = [Uri]::EscapeDataString($pluginVersion)
+$liveUrl = "$panelBaseUrl/$slug/live-dock/?dock=1&pluginVersion=$versionParam&widgetToken=$token"
+$chatUrl = "$panelBaseUrl/$slug/chat/?dock=1&pluginVersion=$versionParam&widgetToken=$token"
+    $docks = @(
+        @{ title = "Multi Live Dock Live"; url = $liveUrl; uuid = "multilive_live_dock" },
+        @{ title = "Multi Live Chat"; url = $chatUrl; uuid = "multilive_chat_dock" }
+    ) | ConvertTo-Json -Compress
+    $line = "ExtraBrowserDocks=$docks"
+
+    if ($raw -match "(?ms)^\[BasicWindow\].*?^ExtraBrowserDocks=$([Regex]::Escape($docks))$") {
+        Write-Step "Docks OBS deja a jour."
+        return
+    }
+
+    $backup = "$iniPath.multilive.bak"
+    Copy-Item -LiteralPath $iniPath -Destination $backup -Force
+
+    if ($raw -match "(?m)^ExtraBrowserDocks=.*$") {
+        $raw = [Regex]::Replace($raw, "(?m)^ExtraBrowserDocks=.*$", [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $line }, 1)
+    } elseif ($raw -match "(?m)^\[BasicWindow\]\s*$") {
+        $raw = [Regex]::Replace($raw, "(?m)^\[BasicWindow\]\s*$", "[BasicWindow]`r`n$line", 1)
+    } else {
+        $raw = "$raw`r`n[BasicWindow]`r`n$line`r`n"
+    }
+
+    Set-Content -LiteralPath $iniPath -Value $raw -Encoding UTF8
+    Write-Step "Docks OBS repares vers multi-live-pro.com."
+}
+
 function Write-InstallReport($obsRoot, $installedDll, $scanText) {
     $files = Get-ChildItem -LiteralPath $packageRoot -Recurse -File
     $lines = @()
     $lines += "$displayName - rapport installation"
+    $lines += "Version: $pluginVersion"
     $lines += "Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     $lines += "OBS: $obsRoot"
     $lines += "DLL installee: $installedDll"
@@ -114,9 +186,10 @@ if ($scanner) {
 
 Write-Step "Installation dans OBS Studio..."
 $installedDll = Copy-Plugin $obsRoot
+Repair-MultiLiveDocks
 Write-InstallReport $obsRoot $installedDll $scanText
 
-Write-Step "Installation terminee."
+Write-Step "Installation terminee. Version $pluginVersion."
 Write-Host ""
 Write-Host "Redemarre OBS Studio."
 Write-Host "Rapport: $reportPath"
